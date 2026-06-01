@@ -5,7 +5,7 @@ const STRIDEPlatform = () => {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "Hey. I'm going to ask you some questions to figure out if systematizing your business makes sense right now. This isn't sales stuff—it's diagnosis. So I'm going to be direct. What type of service business do you run?"
+      content: "Hey. I'm going to ask you some questions to figure out if systematising your business makes sense right now. This isn't sales stuff—it's diagnosis. So I'm going to be direct. What type of service business do you run?"
     }
   ]);
   const [input, setInput] = useState('');
@@ -106,7 +106,7 @@ const STRIDEPlatform = () => {
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
 
-    const systemPrompt = `You are the LSSB Discovery Agent. You are at stage ${discoveryStage} of a 5-stage discovery conversation with a service business owner.
+    const systemPrompt = `You are the STRIDE Discovery Agent. You are at stage ${discoveryStage} of a 5-stage discovery conversation with a service business owner.
 
 User profile so far: ${JSON.stringify(userProfile)}
 
@@ -114,7 +114,7 @@ STAGE 0 (They said their industry): Acknowledge their industry. Ask about team s
 
 STAGE 1 (They said team size): Ask about their main pain point. Reference their industry specifically. Don't assume. Example: "With a team of [size], I'm guessing the admin burden is real. What's eating up your time most? Is it [specific thing for their industry]?"
 
-STAGE 2 (They identified pain): Ask if they've tried automation before. Example: "Have you ever tried to automate or systematize anything in your business before? If so, what happened?"
+STAGE 2 (They identified pain): Ask if they've tried automation before. Example: "Have you ever tried to automate or systematise anything in your business before? If so, what happened?"
 
 STAGE 3 (They answered automation history): Ask if they can actually implement. Be direct. Example: "Real question: Do you have 6-9 hours over the next 1-2 weeks to implement something? And is your team generally open to change, or do you have resisters?"
 
@@ -290,7 +290,7 @@ Be direct. Be honest. You're not selling everyone. You're filtering for fit.`;
               <div>
                 <div style={{ fontSize: '16px', fontWeight: '600', color: '#D97634', marginBottom: '12px' }}>1. Discovery Conversation</div>
                 <p style={{ fontSize: '14px', lineHeight: '1.7', margin: '0' }}>
-                  Answer 5 honest questions. We figure out if now is the right time for you to systematize, and what would actually solve your problem.
+                  Answer 5 honest questions. We figure out if now is the right time for you to systematise, and what would actually solve your problem.
                 </p>
               </div>
               <div>
@@ -551,7 +551,7 @@ Be direct. Be honest. You're not selling everyone. You're filtering for fit.`;
             marginBottom: '60px',
             maxWidth: '600px'
           }}>
-            Here's what actually happened when service business owners systematized their businesses. These are real numbers from real businesses.
+            Here's what actually happened when service business owners systematised their businesses. These are real numbers from real businesses.
           </p>
 
           {/* Case studies by industry */}
