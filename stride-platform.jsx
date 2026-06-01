@@ -1,663 +1,175 @@
-// ============================================================================
-// STRIDE - SERVICE BUSINESS SYSTEMATIZATION PLATFORM
-// Version: 1.0.0
-// Target Launch: July 1, 2026
-// 
-// This is a production-ready React application integrating:
-// - AI Discovery Agent with profile building
-// - Personalized dashboards and resource libraries
-// - Payment processing (Stripe integration)
-// - Lead management and CRM
-// - Community features
-// - Progress tracking
-// - Analytics and reporting
-// - Admin dashboard
-// ============================================================================
+import React, { useState, useRef, useEffect } from 'react';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronDown, Lock, Check, Users, Calendar, TrendingUp, Settings, LogOut, Menu, X, Download, Share2, Eye, MessageCircle, Heart, AlertCircle } from 'lucide-react';
-
-// ============================================================================
-// CONSTANTS AND CONFIGURATION
-// ============================================================================
-
-const ENVIRONMENT = {
-  API_BASE: process.env.REACT_APP_API_BASE || 'https://api.stride.ai',
-  STRIPE_PUBLIC_KEY: process.env.REACT_APP_STRIPE_PUBLIC_KEY,
-  ANTHROPIC_API_KEY: process.env.REACT_APP_ANTHROPIC_API_KEY
-};
-
-// Industry definitions with all attributes needed for personalization
-const INDUSTRIES = {
-  contractor: {
-    id: 'contractor',
-    name: 'Contractor / Facilities / Security',
-    emoji: '🏗️',
-    painPoints: ['Estimate writing (3-4 hours each)', 'Scope documentation scattered', 'Compliance requirements', 'Team scheduling chaos'],
-    roiTimeline: '2-3 weeks',
-    timeSaved: '12-14 hours/week',
-    revenue_impact: '$8,000-12,000 new monthly revenue',
-    case_studies: [
-      {
-        id: 'contractor-1',
-        name: 'Sarah',
-        location: 'Austin, TX',
-        before: 'Spending 3.5 hours per estimate, winning 40% of estimates',
-        after: 'Now 1 hour per estimate, winning 65% of estimates, 2-3 extra clients per month',
-        metric: '+$8,500/month revenue',
-        testimonial: 'Estimates are faster, clients see professionalism, conversion rate jumped. Game changer for margin.'
-      }
-    ],
-    templates: [
-      'Estimate Template with Variables',
-      'Scope Documentation Checklist',
-      'Team Scheduling Framework',
-      'Compliance Documentation System'
-    ]
-  },
-  photographer: {
-    id: 'photographer',
-    name: 'Wedding / Graduation Photographer',
-    emoji: '📸',
-    painPoints: ['Switching between 3+ systems per question', 'Duplicate client data entry', 'Gallery/contract/booking scattered', 'Client communication slow'],
-    roiTimeline: '4-6 weeks',
-    timeSaved: '8-9 hours/week',
-    revenue_impact: '$4,500-6,000 additional revenue from portfolio work',
-    case_studies: [
-      {
-        id: 'photographer-1',
-        name: 'Jennifer',
-        location: 'Portland, OR',
-        before: 'Client questions took 3 hours/week, admin-heavy weeks meant no portfolio work',
-        after: 'Client questions now 30 mins/week, freed Thursday afternoons, 3 additional bookings from new portfolio content',
-        metric: '+$4,800/month revenue',
-        testimonial: 'The portal eliminated back-and-forth. Clients see their own status. I got my creative time back.'
-      }
-    ],
-    templates: [
-      'Client Portal Setup Guide',
-      'Contract Consolidation System',
-      'Payment Tracking Dashboard',
-      'Gallery Management Workflow'
-    ]
-  },
-  courier: {
-    id: 'courier',
-    name: 'Courier / Delivery / Logistics',
-    emoji: '📦',
-    painPoints: ['Route changes = 30 min phone calls', 'Driver communication slow', 'Missed deliveries from confusion', 'No real-time visibility'],
-    roiTimeline: '2-4 weeks',
-    timeSaved: '6-8 hours/week',
-    revenue_impact: '$1,200-1,800/month from prevented cancellations',
-    case_studies: [
-      {
-        id: 'courier-1',
-        name: 'David',
-        location: 'Chicago, IL',
-        before: 'Route communication took 30 min/day, 23% delivery failure rate',
-        after: 'Route communication now 5 min/day via SMS, delivery failure rate 4%, fewer customer complaints',
-        metric: '+$1,400/month revenue',
-        testimonial: 'SMS notifications cut communication time to nothing. Fewer missed deliveries. Clients are happier.'
-      }
-    ],
-    templates: [
-      'Route Change Notification System',
-      'Driver Communication Protocol',
-      'Delivery Confirmation Workflow',
-      'Real-time Tracking Setup'
-    ]
-  },
-  cleaner: {
-    id: 'cleaner',
-    name: 'Residential / Commercial Cleaning',
-    emoji: '🧹',
-    painPoints: ['Team callouts destroy margins', 'Route coverage scrambling', 'Last-minute cancellations = lost revenue', 'No backup coordination system'],
-    roiTimeline: '2-3 months',
-    timeSaved: '8-10 hours/week',
-    revenue_impact: '$1,200-1,800/month from prevented cancellations',
-    case_studies: [
-      {
-        id: 'cleaner-1',
-        name: 'Jennifer',
-        location: 'Houston, TX',
-        before: 'Covering 20% of callouts with scrambling, 8% monthly revenue loss to cancellations',
-        after: 'Now covering 70% of callouts, 1.5% monthly revenue loss, team knows backup protocol',
-        metric: '+$1,400/month revenue',
-        testimonial: 'Callouts killed my margins. Now I have a team backup list and advance notice system. Revenue stabilized.'
-      }
-    ],
-    templates: [
-      'Team Callout Protocol',
-      'Route Coverage Backup System',
-      'Advance Scheduling Notification',
-      'Team Coordination Framework'
-    ]
-  },
-  healthcare: {
-    id: 'healthcare',
-    name: 'Healthcare Agency / Home Health / Staffing',
-    emoji: '🏥',
-    painPoints: ['Documentation flow slow (caregiver to database)', 'No real-time visibility', 'Billing delayed 10 days from documentation lag', 'Compliance documentation risk'],
-    roiTimeline: 'Immediate',
-    timeSaved: 'Cash flow improves 10 days (10+ day early billing)',
-    revenue_impact: '$40,000-60,000+ monthly cash flow improvement',
-    case_studies: [
-      {
-        id: 'healthcare-1',
-        name: 'Jennifer',
-        location: 'Atlanta, GA',
-        before: 'Documentation reconstructed month-end, billing on day 15, $180K monthly on float',
-        after: 'Real-time documentation sync, billing on day 5, $60K cash flow improvement, audit-ready instantly',
-        metric: '+$60K monthly cash flow',
-        testimonial: 'Cash flow was our biggest constraint. Real-time documentation changed everything. Billing happens day 5 now.'
-      }
-    ],
-    templates: [
-      'Caregiver Mobile Documentation App',
-      'Real-time Database Sync System',
-      'Automated Billing Trigger',
-      'Compliance Audit Trail System'
-    ]
-  },
-  coach: {
-    id: 'coach',
-    name: 'Wellness / Business / Life Coach',
-    emoji: '🧠',
-    painPoints: ['Client context scattered across emails/notes', 'Follow-ups inconsistent', 'Session quality lower from missing context', 'Client retention lower than possible'],
-    roiTimeline: '6-8 weeks',
-    timeSaved: '5-7 hours/week',
-    revenue_impact: '12%+ client retention improvement = $2,400-4,000/month from reduced churn',
-    case_studies: [
-      {
-        id: 'coach-1',
-        name: 'Michelle',
-        location: 'New York, NY',
-        before: 'Digging for context before sessions, inconsistent follow-ups, 18% annual churn',
-        after: 'One-click client context, automated follow-ups, 6% annual churn, session quality visibly improved',
-        metric: '+$3,200/month revenue (retention)',
-        testimonial: 'I remember everything now. Sessions are deeper. Clients stay longer. That 12% retention improvement is real money.'
-      }
-    ],
-    templates: [
-      'Client Context File System',
-      'Follow-up Automation Framework',
-      'Session Prep Checklist',
-      'Progress Tracking Dashboard'
-    ]
-  }
-};
-
-// Offer tiers with features and pricing
-const OFFERS = {
-  free: {
-    id: 'free',
-    name: 'Free Audit Checklist',
-    price: 0,
-    description: '7-minute diagnostic tool',
-    features: ['Business Audit Checklist (PDF)', 'Industry-Specific Pain Points Guide', 'Initial email sequence (5 emails)'],
-    included_resources: ['free'],
-    stripe_product_id: null,
-    conversion_target: 'workshop'
-  },
-  workshop: {
-    id: 'workshop',
-    name: 'Business Systems Workshop',
-    price: 97,
-    description: '2-hour live workshop with Q&A',
-    features: [
-      'Live or on-demand 2-hour workshop',
-      'Industry-specific implementation roadmap',
-      'Complete template library (50+ templates)',
-      '7-day follow-up email sequence',
-      'Implementation checklist'
-    ],
-    included_resources: ['free', 'workshop'],
-    stripe_product_id: 'prod_workshop_2026',
-    conversion_target: 'membership'
-  },
-  audit: {
-    id: 'audit',
-    name: 'Customized Business Audit',
-    price: 497,
-    description: 'Custom 15-page implementation roadmap',
-    features: [
-      '90-minute private consultation',
-      'Customized 15-page implementation roadmap',
-      'Industry-specific troubleshooting guide',
-      'Team adoption playbook',
-      '30-day monthly check-in call',
-      'Priority email support'
-    ],
-    included_resources: ['free', 'workshop', 'audit'],
-    stripe_product_id: 'prod_audit_2026',
-    conversion_target: 'membership'
-  },
-  membership: {
-    id: 'membership',
-    name: 'Blueprint Membership',
-    price: 107,
-    price_monthly: true,
-    description: 'Ongoing systems and community',
-    features: [
-      'Monthly template library updates (10+ new templates)',
-      'Private member community (Slack)',
-      'Monthly group workshop (rotating topics)',
-      '24-hour email support',
-      'Quarterly office hours (live Q&A)',
-      'Progress tracking dashboard',
-      'Member case study library',
-      'Annual in-person retreat (optional, additional cost)'
-    ],
-    included_resources: ['free', 'workshop', 'audit', 'membership'],
-    stripe_product_id: 'prod_membership_2026',
-    stripe_recurring: true,
-    average_lifetime: 9 // months
-  }
-};
-
-// Resource library structure
-const RESOURCES = {
-  free: [
-    { id: 'free-1', title: 'Business Audit Checklist', type: 'PDF', desc: '7-minute diagnostic', size: '500KB' },
-    { id: 'free-2', title: 'Industry Guide', type: 'PDF', desc: 'Pain points and ROI', size: '2MB' }
-  ],
-  workshop: [
-    { id: 'workshop-video', title: 'Full Workshop Recording', type: 'Video', desc: '2 hours', size: '450MB' },
-    { id: 'workshop-templates', title: 'Template Bundle', type: 'ZIP', desc: '50+ templates', size: '12MB' },
-    { id: 'workshop-checklist', title: 'Implementation Checklist', type: 'PDF', desc: 'Week-by-week', size: '1.2MB' },
-    { id: 'workshop-guide', title: 'Setup Guides', type: 'Docs', desc: '20 detailed guides', size: '5MB' }
-  ],
-  audit: [
-    { id: 'audit-roadmap', title: 'Custom Implementation Roadmap', type: 'PDF', desc: '15-page personalized', size: '3MB' },
-    { id: 'audit-troubleshooting', title: 'Troubleshooting Guide', type: 'PDF', desc: 'Industry-specific', size: '2.5MB' },
-    { id: 'audit-adoption', title: 'Team Adoption Playbook', type: 'PDF', desc: 'Getting buy-in', size: '1.8MB' }
-  ],
-  membership: [
-    { id: 'member-library', title: 'Complete Template Library', type: 'Library', desc: '200+ templates', size: 'Unlimited' },
-    { id: 'member-monthly', title: 'Monthly Updates', type: 'Docs', desc: 'New systems', size: 'Ongoing' },
-    { id: 'member-community', title: 'Private Community', type: 'Slack', desc: 'Members only', size: 'Live' },
-    { id: 'member-workshops', title: 'Monthly Workshops', type: 'Video', desc: 'Recorded + live', size: 'Ongoing' }
-  ]
-};
-
-// ============================================================================
-// MAIN APPLICATION COMPONENT
-// ============================================================================
-
-const StridePlatform = () => {
-  // Authentication & User State
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [authToken, setAuthToken] = useState(localStorage.getItem('lssb_token'));
-
-  // Navigation
-  const [currentView, setCurrentView] = useState('landing');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Discovery State
-  const [discoveryMessages, setDiscoveryMessages] = useState([
+const STRIDEPlatform = () => {
+  const [currentView, setCurrentView] = useState('landing'); // landing, discover, dashboard, resources, offer-recommendation, case-studies
+  const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "Hey there. I'm going to ask you some questions to figure out if systematizing your business makes sense right now. This isn't sales—it's diagnosis. What type of service business do you run?"
+      content: "Hey. I'm going to ask you some questions to figure out if systematizing your business makes sense right now. This isn't sales stuff—it's diagnosis. So I'm going to be direct. What type of service business do you run?"
     }
   ]);
-  const [discoveryInput, setDiscoveryInput] = useState('');
-  const [discoveryLoading, setDiscoveryLoading] = useState(false);
-  const [discoveryStage, setDiscoveryStage] = useState(0);
-
-  // User Profile (built during discovery)
-  const [userProfile, setUserProfile] = useState({
-    id: null,
-    industry: null,
-    teamSize: null,
-    revenue: null,
-    mainPainPoint: null,
-    hasTriedAutomation: null,
-    automationHistory: null,
-    canImplement: null,
-    implementationCapacity: null,
-    email: null,
-    businessName: null,
-    phone: null
-  });
-
-  // Purchase & Offers
-  const [purchasedOffers, setPurchasedOffers] = useState([]);
-  const [recommendedOffer, setRecommendedOffer] = useState(null);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-
-  // Dashboard State
-  const [dashboardData, setDashboardData] = useState({
-    implementationProgress: 0,
-    completedSystems: [],
-    hoursReclaimed: 0,
-    currentPhase: 1,
-    nextMilestone: null,
-    teamMembers: [],
-    recentActivity: []
-  });
-
-  // Analytics & Admin
-  const [analyticsData, setAnalyticsData] = useState(null);
-
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [discoveryStage, setDiscoveryStage] = useState(0); // 0-5
   const messagesEndRef = useRef(null);
 
-  // Auto-scroll to latest message
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [discoveryMessages]);
+  // User profile that builds as they answer questions
+  const [userProfile, setUserProfile] = useState({
+    industry: null,
+    teamSize: null,
+    mainPainPoint: null,
+    hasTriedAutomation: null,
+    canImplement: null,
+    email: null
+  });
 
-  // =========================================================================
-  // AUTHENTICATION FUNCTIONS
-  // =========================================================================
+  const [recommendedOffer, setRecommendedOffer] = useState(null);
 
-  const handleLogin = async (email, password) => {
-    try {
-      // In production, this would call your backend authentication API
-      const response = await fetch(`${ENVIRONMENT.API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAuthToken(data.token);
-        setCurrentUser(data.user);
-        setIsLoggedIn(true);
-        localStorage.setItem('lssb_token', data.token);
-        setCurrentView('dashboard');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
+  // Industry-specific information
+  const industries = {
+    contractor: {
+      name: 'Contractor / Facilities / Security',
+      emoji: '🏗️',
+      painPoints: 'Estimate writing (3-4 hours per estimate), scope documentation scattered, compliance requirements, team scheduling',
+      roiTimeline: '2-3 weeks',
+      timeSaved: '12-14 hours/week',
+      caseStudies: [
+        { name: 'Sarah', location: 'Austin, TX', before: '3.5 hours per estimate', after: 'Now 1 hour. Winning 2-3 extra clients/month.' }
+      ]
+    },
+    photographer: {
+      name: 'Wedding/Graduation Photographer',
+      emoji: '📸',
+      painPoints: 'Switching between 3+ systems for one client question, duplicate client data entry, gallery management scattered',
+      roiTimeline: '4-6 weeks',
+      timeSaved: '9 hours/week',
+      caseStudies: [
+        { name: 'Jennifer', location: 'Portland, OR', before: 'Client questions: 3 hours/week', after: 'Now 30 minutes. Freed time for portfolio shoots = 3 more bookings.' }
+      ]
+    },
+    courier: {
+      name: 'Courier / Delivery',
+      emoji: '📦',
+      painPoints: 'Route changes = phone call chaos, driver communication slow, missed deliveries from confusion',
+      roiTimeline: '2-4 weeks',
+      timeSaved: '6-8 hours/week',
+      caseStudies: [
+        { name: 'David', location: 'Chicago, IL', before: '30 min/day on route communication', after: 'Now 5 min/day. 23% fewer no-shows.' }
+      ]
+    },
+    cleaner: {
+      name: 'Residential/Commercial Cleaning',
+      emoji: '🧹',
+      painPoints: 'Team callouts destroy margins, route coverage scrambling, last-minute cancellations losing revenue',
+      roiTimeline: '2-3 months',
+      timeSaved: '8-10 hours/week',
+      caseStudies: [
+        { name: 'Jennifer', location: 'Houston, TX', before: 'Covering 20% of callouts', after: 'Now 70%. Extra $1,200/month from prevented cancellations.' }
+      ]
+    },
+    healthcare: {
+      name: 'Healthcare Agency / Home Health',
+      emoji: '🏥',
+      painPoints: 'Documentation flow slow, real-time visibility missing, billing delayed 10 days because documentation lags',
+      roiTimeline: 'Immediate',
+      timeSaved: 'Cash flow improves by 10 days ($60K/month)',
+      caseStudies: [
+        { name: 'Jennifer', location: 'Atlanta, GA', before: 'Billing on day 15', after: 'Now day 5. $60K monthly cash flow improvement.' }
+      ]
+    },
+    coach: {
+      name: 'Wellness/Business Coach',
+      emoji: '🧠',
+      painPoints: 'Client context scattered, follow-ups inconsistent, forgetting key details, client retention lower than possible',
+      roiTimeline: '6-8 weeks',
+      timeSaved: '5-7 hours/week',
+      caseStudies: [
+        { name: 'Michelle', location: 'New York, NY', before: 'Digging for context before sessions', after: 'Instant access. Sessions deeper. 12% retention improvement.' }
+      ]
     }
   };
 
-  const handleLogout = () => {
-    setAuthToken(null);
-    setCurrentUser(null);
-    setIsLoggedIn(false);
-    localStorage.removeItem('lssb_token');
-    setCurrentView('landing');
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // =========================================================================
-  // DISCOVERY AGENT FUNCTIONS
-  // =========================================================================
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
-  const handleDiscoveryMessage = async (e) => {
-    e?.preventDefault?.();
-    if (!discoveryInput.trim()) return;
+  const handleMessageSend = async (e) => {
+    e.preventDefault();
+    if (!input.trim()) return;
 
-    const userMessage = discoveryInput;
-    setDiscoveryInput('');
-    setDiscoveryMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-    setDiscoveryLoading(true);
+    const userMessage = input;
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setLoading(true);
 
-    // System prompt for the AI agent - encodes all business logic
-    const systemPrompt = `You are the LSSB Discovery Agent. You help service business owners diagnose if systemization makes sense NOW.
+    const systemPrompt = `You are the LSSB Discovery Agent. You are at stage ${discoveryStage} of a 5-stage discovery conversation with a service business owner.
 
-Current user profile: ${JSON.stringify(userProfile)}
-Discovery stage: ${discoveryStage} of 5
+User profile so far: ${JSON.stringify(userProfile)}
 
-BEHAVIOR BY STAGE:
-Stage 0: They named industry. Ask team size. Be conversational.
-Stage 1: They said team size. Ask about their MAIN pain point. Reference their industry.
-Stage 2: They identified pain. Ask if they've tried automation. Listen for skepticism patterns.
-Stage 3: They answered automation history. Ask if they can implement (6-9 hours, next 60 days).
-Stage 4: They answered readiness. Give HONEST recommendation based on profile.
+STAGE 0 (They said their industry): Acknowledge their industry. Ask about team size. Be conversational, not robotic. Example: "Got it—so you're in [industry]. How many people are on your team right now?"
 
-RECOMMENDATION LOGIC:
-- Industry check + pain point check + automation history + implementation capacity = offer type
-- First-time implementer, clear pain, ready to work → WORKSHOP ($97)
-- Tried and failed before, ready to work → AUDIT ($497)
-- Still exploring, not clear → FREE CHECKLIST
-- Doesn't have implementation capacity → Tell them to come back later
-- Pain point is outside systematization (lead gen, pricing) → Be honest about that
+STAGE 1 (They said team size): Ask about their main pain point. Reference their industry specifically. Don't assume. Example: "With a team of [size], I'm guessing the admin burden is real. What's eating up your time most? Is it [specific thing for their industry]?"
 
-You must be DIRECT and HONEST. You filter for fit. You're not trying to sell everyone.
+STAGE 2 (They identified pain): Ask if they've tried automation before. Example: "Have you ever tried to automate or systematize anything in your business before? If so, what happened?"
 
-Industry-specific guidance for ${userProfile.industry}:
-${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not yet identified'}`;
+STAGE 3 (They answered automation history): Ask if they can actually implement. Be direct. Example: "Real question: Do you have 6-9 hours over the next 1-2 weeks to implement something? And is your team generally open to change, or do you have resisters?"
+
+STAGE 4 (They answered readiness): Give them an honest recommendation. If they're ready to implement and haven't tried automation → WORKSHOP ($97). If they've tried and failed → AUDIT ($497). If they're exploring → FREE CHECKLIST. If they have bigger problems → Be honest about that.
+
+Be direct. Be honest. You're not selling everyone. You're filtering for fit.`;
 
     try {
-      // Call Anthropic API for the discovery agent response
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': ENVIRONMENT.ANTHROPIC_API_KEY
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 600,
           system: systemPrompt,
-          messages: [...discoveryMessages, { role: 'user', content: userMessage }]
+          messages: [...messages, { role: 'user', content: userMessage }]
         })
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const assistantMessage = data.content[0].text;
-        setDiscoveryMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
-
-        // Update profile based on user response
-        updateProfileFromResponse(userMessage);
-
-        // Advance discovery stage
+      const data = await response.json();
+      
+      if (data.content && data.content[0]) {
+        setMessages(prev => [...prev, { role: 'assistant', content: data.content[0].text }]);
+        
+        // Auto-progress discovery
         if (discoveryStage < 5) {
           setDiscoveryStage(prev => prev + 1);
         }
 
-        // Generate recommendation at stage 5
-        if (discoveryStage === 5) {
-          const offer = determineRecommendedOffer();
+        // Determine offer when we hit stage 4
+        if (discoveryStage === 4) {
+          let offer = 'workshop';
+          if (userProfile.hasTriedAutomation && !userProfile.canImplement) {
+            offer = 'free';
+          } else if (userProfile.hasTriedAutomation) {
+            offer = 'audit';
+          }
           setRecommendedOffer(offer);
         }
       }
     } catch (error) {
-      console.error('Discovery API error:', error);
-      setDiscoveryMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Technical issue. Please try again.'
-      }]);
+      console.error('Error:', error);
     } finally {
-      setDiscoveryLoading(false);
+      setLoading(false);
     }
   };
 
-  // Parse user responses and update profile
-  const updateProfileFromResponse = (response) => {
-    const lowerResponse = response.toLowerCase();
-
-    // Industry detection from stage 0-1
-    if (discoveryStage === 0) {
-      Object.entries(INDUSTRIES).forEach(([key, industry]) => {
-        if (lowerResponse.includes(key) || lowerResponse.includes(industry.name.toLowerCase())) {
-          setUserProfile(prev => ({ ...prev, industry: key }));
-        }
-      });
-    }
-
-    // Team size extraction from stage 1-2
-    if (discoveryStage === 1) {
-      const numberMatch = response.match(/\d+/);
-      if (numberMatch) {
-        setUserProfile(prev => ({ ...prev, teamSize: parseInt(numberMatch[0]) }));
-      }
-    }
-
-    // Pain point capture at stage 2-3
-    if (discoveryStage === 2) {
-      if (userProfile.industry) {
-        const industryPains = INDUSTRIES[userProfile.industry].painPoints;
-        const matchedPain = industryPains.find(pain => lowerResponse.includes(pain.toLowerCase()));
-        if (matchedPain) {
-          setUserProfile(prev => ({ ...prev, mainPainPoint: matchedPain }));
-        } else {
-          // Store custom pain point
-          setUserProfile(prev => ({ ...prev, mainPainPoint: response }));
-        }
-      }
-    }
-
-    // Automation history at stage 3-4
-    if (discoveryStage === 3) {
-      const hasTriedYes = lowerResponse.includes('yes') || lowerResponse.includes('tried');
-      setUserProfile(prev => ({
-        ...prev,
-        hasTriedAutomation: hasTriedYes,
-        automationHistory: response
-      }));
-    }
-
-    // Implementation capacity at stage 4-5
-    if (discoveryStage === 4) {
-      const canImplement = lowerResponse.includes('yes') || lowerResponse.includes('can');
-      setUserProfile(prev => ({
-        ...prev,
-        canImplement: canImplement,
-        implementationCapacity: response
-      }));
-    }
-  };
-
-  // Determine which offer to recommend based on profile
-  const determineRecommendedOffer = () => {
-    if (!userProfile.canImplement) {
-      return 'free'; // Come back later
-    }
-
-    if (userProfile.hasTriedAutomation && !userProfile.mainPainPoint) {
-      return 'free'; // Still exploring
-    }
-
-    if (userProfile.hasTriedAutomation && userProfile.mainPainPoint) {
-      return 'audit'; // Tried and failed, needs custom plan
-    }
-
-    if (!userProfile.hasTriedAutomation && userProfile.mainPainPoint && userProfile.canImplement) {
-      return 'workshop'; // Ready to implement, first-time
-    }
-
-    return 'free'; // Default to starting point
-  };
-
-  // =========================================================================
-  // PAYMENT & OFFER FUNCTIONS
-  // =========================================================================
-
-  const handlePurchaseOffer = async (offerId) => {
-    if (!OFFERS[offerId].price) {
-      // Free offer - just track it
-      handleFreeOfferAccept(offerId);
-      return;
-    }
-
-    setCheckoutLoading(true);
-
-    try {
-      // In production, this would create a Stripe session
-      // This is a simplified example
-      const response = await fetch(`${ENVIRONMENT.API_BASE}/create-checkout-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
-          offer_id: offerId,
-          user_id: currentUser?.id,
-          success_url: `${window.location.origin}?view=success`,
-          cancel_url: `${window.location.origin}?view=offer`
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Redirect to Stripe checkout
-        window.location.href = data.checkout_url;
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-    } finally {
-      setCheckoutLoading(false);
-    }
-  };
-
-  const handleFreeOfferAccept = async (offerId) => {
-    try {
-      // Log free offer acceptance and send email
-      await fetch(`${ENVIRONMENT.API_BASE}/accept-offer`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
-          offer_id: offerId,
-          user_id: currentUser?.id,
-          user_profile: userProfile
-        })
-      });
-
-      setPurchasedOffers(prev => [...prev, offerId]);
-
-      // Show confirmation
-      alert(`Great! Check your email for your ${OFFERS[offerId].name}. We've also emailed you the next steps.`);
-
-      if (offerId === 'free') {
-        setCurrentView('resources');
-      }
-    } catch (error) {
-      console.error('Offer acceptance error:', error);
-    }
-  };
-
-  // =========================================================================
-  // DASHBOARD & PROGRESS TRACKING
-  // =========================================================================
-
-  const updateImplementationProgress = async (systemName, completion) => {
-    try {
-      await fetch(`${ENVIRONMENT.API_BASE}/update-progress`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
-          user_id: currentUser?.id,
-          system_name: systemName,
-          completion_percentage: completion,
-          timestamp: new Date().toISOString()
-        })
-      });
-
-      // Recalculate overall progress
-      const newProgress = calculateOverallProgress();
-      setDashboardData(prev => ({ ...prev, implementationProgress: newProgress }));
-    } catch (error) {
-      console.error('Progress update error:', error);
-    }
-  };
-
-  const calculateOverallProgress = () => {
-    // Average of all systems in user's industry
-    const systemsForIndustry = INDUSTRIES[userProfile.industry]?.templates || [];
-    const completedCount = dashboardData.completedSystems.length;
-    return Math.round((completedCount / systemsForIndustry.length) * 100);
-  };
-
-  // =========================================================================
-  // UI COMPONENTS - LANDING PAGE
-  // =========================================================================
-
-  const renderLanding = () => {
+  // LANDING PAGE
+  if (currentView === 'landing') {
     return (
-      <div style={{ background: '#F7F6F3', minHeight: '100vh' }}>
-        {/* Navigation Bar */}
-        <nav style={{
+      <div style={{ background: '#F7F6F3', minHeight: '100vh', fontFamily: 'IBM Plex Sans, sans-serif' }}>
+        {/* Navigation */}
+        <div style={{
           background: '#2C3E50',
           color: '#F7F6F3',
           padding: '16px 40px',
@@ -666,20 +178,15 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
           alignItems: 'center',
           borderBottom: '2px solid #D97634'
         }}>
-          <div style={{ fontSize: '18px', fontWeight: '600', letterSpacing: '-0.5px' }}>
-            STRIDE
+          <div style={{ fontSize: '18px', fontWeight: '600' }}>LSSB</div>
+          <div style={{ display: 'flex', gap: '20px', fontSize: '13px' }}>
+            <button onClick={() => setCurrentView('landing')} style={{ background: 'none', border: 'none', color: '#F7F6F3', cursor: 'pointer' }}>Home</button>
+            <button onClick={() => setCurrentView('discover')} style={{ background: 'none', border: 'none', color: '#F7F6F3', cursor: 'pointer' }}>Start Discovery</button>
+            <button onClick={() => setCurrentView('case-studies')} style={{ background: 'none', border: 'none', color: '#F7F6F3', cursor: 'pointer' }}>Results</button>
           </div>
-          <div style={{ display: 'flex', gap: '24px', fontSize: '13px' }}>
-            <button onClick={() => setCurrentView('case-studies')} style={{ background: 'none', border: 'none', color: '#F7F6F3', cursor: 'pointer' }}>
-              Results
-            </button>
-            <button onClick={() => setCurrentView('discover')} style={{ background: 'none', border: 'none', color: '#F7F6F3', cursor: 'pointer' }}>
-              Start Discovery
-            </button>
-          </div>
-        </nav>
+        </div>
 
-        {/* Hero Section */}
+        {/* Hero */}
         <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '80px 40px 60px' }}>
           <h1 style={{
             fontSize: '48px',
@@ -690,7 +197,7 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
           }}>
             Automate the boring. Master the business.
           </h1>
-
+          
           <p style={{
             fontSize: '18px',
             color: '#555555',
@@ -698,7 +205,8 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
             marginBottom: '40px',
             maxWidth: '600px'
           }}>
-            You run a profitable service business. But something is eating your time that shouldn't be. This is for owners who know their problem and are ready to solve it—not someday, but now.
+            You run a profitable service business. But something is eating your time that shouldn't be. 
+            This is for owners who know their problem and are ready to solve it.
           </p>
 
           <button
@@ -715,7 +223,7 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
               fontFamily: 'IBM Plex Sans, sans-serif'
             }}
           >
-            Start Free Discovery (5 minutes)
+            Start Free Discovery
           </button>
 
           <p style={{
@@ -723,11 +231,11 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
             color: '#888888',
             marginTop: '12px'
           }}>
-            No email required for discovery. No sales pitch coming. Just honest diagnosis.
+            No email required. No pitch coming. Just honest diagnosis. 5 minutes.
           </p>
         </div>
 
-        {/* Industry Grid */}
+        {/* Industries */}
         <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px' }}>
           <h2 style={{
             fontSize: '22px',
@@ -735,51 +243,38 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
             color: '#2C3E50',
             marginBottom: '32px'
           }}>
-            Built for these industries:
+            Built for service businesses like yours:
           </h2>
-
+          
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
             gap: '20px'
           }}>
-            {Object.entries(INDUSTRIES).map(([key, industry]) => (
+            {Object.entries(industries).map(([key, data]) => (
               <div key={key} style={{
                 background: '#FFFFFF',
                 border: '1px solid #E0E0E0',
                 borderRadius: '8px',
-                padding: '24px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                borderLeft: '4px solid #D97634'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'}
-              onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
-              >
-                <div style={{ fontSize: '28px', marginBottom: '12px' }}>{industry.emoji}</div>
-                <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#2C3E50', margin: '0 0 8px 0' }}>
-                  {industry.name}
+                padding: '20px',
+                fontSize: '14px'
+              }}>
+                <div style={{ fontSize: '28px', marginBottom: '12px' }}>{data.emoji}</div>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#2C3E50', marginBottom: '8px', margin: '0 0 8px 0' }}>
+                  {data.name}
                 </h3>
                 <p style={{ fontSize: '13px', color: '#777777', margin: '0 0 12px 0', lineHeight: '1.6' }}>
-                  {industry.painPoints[0]}, {industry.painPoints[1]}
+                  {data.painPoints}
                 </p>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '8px',
-                  fontSize: '11px',
-                  color: '#D97634',
-                  fontWeight: '600'
-                }}>
-                  <div>ROI: {industry.roiTimeline}</div>
-                  <div>Save: {industry.timeSaved}</div>
+                <div style={{ fontSize: '12px', color: '#D97634', fontWeight: '600' }}>
+                  Typical ROI: {data.roiTimeline}
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* How It Works Section */}
+        {/* How it works */}
         <div style={{
           background: '#2C3E50',
           color: '#F7F6F3',
@@ -790,30 +285,24 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
             <h2 style={{ fontSize: '22px', fontWeight: '600', marginBottom: '40px' }}>
               How this works:
             </h2>
-
+            
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '32px' }}>
               <div>
-                <div style={{ fontSize: '16px', fontWeight: '600', color: '#D97634', marginBottom: '12px' }}>
-                  1. Discovery Conversation
-                </div>
+                <div style={{ fontSize: '16px', fontWeight: '600', color: '#D97634', marginBottom: '12px' }}>1. Discovery Conversation</div>
                 <p style={{ fontSize: '14px', lineHeight: '1.7', margin: '0' }}>
-                  Answer 5 honest questions. We figure out if now is the right time for you and what would actually solve your problem.
+                  Answer 5 honest questions. We figure out if now is the right time for you to systematize, and what would actually solve your problem.
                 </p>
               </div>
               <div>
-                <div style={{ fontSize: '16px', fontWeight: '600', color: '#D97634', marginBottom: '12px' }}>
-                  2. Personalized Recommendation
-                </div>
+                <div style={{ fontSize: '16px', fontWeight: '600', color: '#D97634', marginBottom: '12px' }}>2. Honest Recommendation</div>
                 <p style={{ fontSize: '14px', lineHeight: '1.7', margin: '0' }}>
-                  Free checklist, workshop, audit, or come back later. We'll tell you which is actually right for your situation.
+                  Free checklist. Workshop. Audit. Or come back later. We'll tell you which is actually right for your situation.
                 </p>
               </div>
               <div>
-                <div style={{ fontSize: '16px', fontWeight: '600', color: '#D97634', marginBottom: '12px' }}>
-                  3. You Implement (We Support)
-                </div>
+                <div style={{ fontSize: '16px', fontWeight: '600', color: '#D97634', marginBottom: '12px' }}>3. You Implement</div>
                 <p style={{ fontSize: '14px', lineHeight: '1.7', margin: '0' }}>
-                  Get templates, guides, community support. Do the work. Results in 2-12 weeks. Real revenue or time impact.
+                  Get templates, guides, support. Do the work. Results in 2-12 weeks depending on your industry. Real financial impact.
                 </p>
               </div>
             </div>
@@ -821,13 +310,10 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
         </div>
       </div>
     );
-  };
+  }
 
-  // =========================================================================
-  // UI COMPONENTS - DISCOVERY PAGE
-  // =========================================================================
-
-  const renderDiscovery = () => {
+  // DISCOVERY VIEW
+  if (currentView === 'discover') {
     return (
       <div style={{
         display: 'flex',
@@ -835,7 +321,7 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
         background: '#F7F6F3',
         fontFamily: 'IBM Plex Sans, sans-serif'
       }}>
-        {/* Sidebar Progress */}
+        {/* Sidebar */}
         <div style={{
           width: '300px',
           background: '#2C3E50',
@@ -849,15 +335,15 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
           <h3 style={{ fontSize: '13px', fontWeight: '600', color: '#D97634', margin: '0 0 24px 0' }}>
             Discovery Progress
           </h3>
-
+          
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
             {[
-              { stage: 0, label: 'Industry', complete: !!userProfile.industry },
-              { stage: 1, label: 'Team Size', complete: !!userProfile.teamSize },
-              { stage: 2, label: 'Main Pain', complete: !!userProfile.mainPainPoint },
-              { stage: 3, label: 'Automation History', complete: userProfile.hasTriedAutomation !== null },
-              { stage: 4, label: 'Implementation Ready', complete: userProfile.canImplement !== null },
-              { stage: 5, label: 'Recommendation', complete: !!recommendedOffer }
+              { stage: 0, label: 'Your Industry', icon: '🏢', complete: !!userProfile.industry },
+              { stage: 1, label: 'Team Size', icon: '👥', complete: !!userProfile.teamSize },
+              { stage: 2, label: 'Main Pain Point', icon: '⚠️', complete: !!userProfile.mainPainPoint },
+              { stage: 3, label: 'Automation History', icon: '📊', complete: userProfile.hasTriedAutomation !== null },
+              { stage: 4, label: 'Implementation Ready', icon: '⏱️', complete: userProfile.canImplement !== null },
+              { stage: 5, label: 'Your Recommendation', icon: '🎯', complete: !!recommendedOffer }
             ].map((item) => (
               <div
                 key={item.stage}
@@ -870,9 +356,8 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontWeight: discoveryStage >= item.stage ? '600' : '400' }}>
-                    {item.label}
-                  </span>
+                  <span style={{ fontSize: '16px' }}>{item.icon}</span>
+                  <span style={{ fontWeight: discoveryStage >= item.stage ? '600' : '400' }}>{item.label}</span>
                   {item.complete && <span style={{ marginLeft: 'auto', color: '#D97634' }}>✓</span>}
                 </div>
               </div>
@@ -897,14 +382,13 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
           </button>
         </div>
 
-        {/* Chat Area */}
+        {/* Chat */}
         <div style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
           background: '#FFFFFF'
         }}>
-          {/* Messages */}
           <div style={{
             flex: 1,
             overflowY: 'auto',
@@ -913,7 +397,7 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
             flexDirection: 'column',
             gap: '24px'
           }}>
-            {discoveryMessages.map((msg, idx) => (
+            {messages.map((msg, idx) => (
               <div
                 key={idx}
                 style={{
@@ -934,8 +418,7 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
                     color: '#F7F6F3',
                     fontSize: '14px',
                     flexShrink: 0,
-                    marginTop: '4px',
-                    fontWeight: '600'
+                    marginTop: '4px'
                   }}>
                     A
                   </div>
@@ -955,7 +438,7 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
                 </div>
               </div>
             ))}
-            {discoveryLoading && (
+            {loading && (
               <div style={{ display: 'flex', gap: '8px', padding: '16px 20px' }}>
                 {[0, 1, 2].map((i) => (
                   <div
@@ -975,7 +458,7 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area */}
+          {/* Input */}
           <div style={{
             background: '#F7F6F3',
             padding: '24px 60px',
@@ -985,11 +468,11 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
           }}>
             <input
               type="text"
-              value={discoveryInput}
-              onChange={(e) => setDiscoveryInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleDiscoveryMessage(e)}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleMessageSend(e)}
               placeholder="Your answer..."
-              disabled={discoveryLoading}
+              disabled={loading}
               style={{
                 flex: 1,
                 padding: '12px 16px',
@@ -1001,17 +484,17 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
               }}
             />
             <button
-              onClick={handleDiscoveryMessage}
-              disabled={discoveryLoading || !discoveryInput.trim()}
+              onClick={handleMessageSend}
+              disabled={loading || !input.trim()}
               style={{
                 padding: '12px 28px',
-                background: discoveryLoading || !discoveryInput.trim() ? '#CCCCCC' : '#D97634',
+                background: loading || !input.trim() ? '#CCCCCC' : '#D97634',
                 color: '#FFFFFF',
                 border: 'none',
                 borderRadius: '6px',
                 fontSize: '14px',
                 fontWeight: '600',
-                cursor: discoveryLoading || !discoveryInput.trim() ? 'not-allowed' : 'pointer',
+                cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
                 fontFamily: 'IBM Plex Sans, sans-serif'
               }}
             >
@@ -1028,16 +511,14 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
         `}</style>
       </div>
     );
-  };
+  }
 
-  // =========================================================================
-  // UI COMPONENTS - CASE STUDIES
-  // =========================================================================
-
-  const renderCaseStudies = () => {
+  // CASE STUDIES VIEW
+  if (currentView === 'case-studies') {
     return (
-      <div style={{ background: '#F7F6F3', minHeight: '100vh' }}>
-        <nav style={{
+      <div style={{ background: '#F7F6F3', minHeight: '100vh', fontFamily: 'IBM Plex Sans, sans-serif' }}>
+        {/* Navigation */}
+        <div style={{
           background: '#2C3E50',
           color: '#F7F6F3',
           padding: '16px 40px',
@@ -1046,17 +527,14 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
           alignItems: 'center',
           borderBottom: '2px solid #D97634'
         }}>
-          <div style={{ fontSize: '18px', fontWeight: '600' }}>STRIDE</div>
-          <div style={{ display: 'flex', gap: '24px', fontSize: '13px' }}>
-            <button onClick={() => setCurrentView('landing')} style={{ background: 'none', border: 'none', color: '#F7F6F3', cursor: 'pointer' }}>
-              Home
-            </button>
-            <button onClick={() => setCurrentView('discover')} style={{ background: 'none', border: 'none', color: '#F7F6F3', cursor: 'pointer' }}>
-              Start Discovery
-            </button>
+          <div style={{ fontSize: '18px', fontWeight: '600' }}>LSSB</div>
+          <div style={{ display: 'flex', gap: '20px', fontSize: '13px' }}>
+            <button onClick={() => setCurrentView('landing')} style={{ background: 'none', border: 'none', color: '#F7F6F3', cursor: 'pointer' }}>Home</button>
+            <button onClick={() => setCurrentView('discover')} style={{ background: 'none', border: 'none', color: '#F7F6F3', cursor: 'pointer' }}>Start Discovery</button>
           </div>
-        </nav>
+        </div>
 
+        {/* Content */}
         <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '60px 40px' }}>
           <h1 style={{
             fontSize: '36px',
@@ -1066,7 +544,7 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
           }}>
             Real Results. Real Service Businesses.
           </h1>
-
+          
           <p style={{
             fontSize: '16px',
             color: '#666666',
@@ -1076,7 +554,8 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
             Here's what actually happened when service business owners systematized their businesses. These are real numbers from real businesses.
           </p>
 
-          {Object.entries(INDUSTRIES).map(([key, industry]) => (
+          {/* Case studies by industry */}
+          {Object.entries(industries).map(([key, data]) => (
             <div key={key} style={{
               background: '#FFFFFF',
               border: '1px solid #E0E0E0',
@@ -1085,19 +564,19 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
               marginBottom: '24px',
               borderLeft: '4px solid #D97634'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                <span style={{ fontSize: '28px' }}>{industry.emoji}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                <span style={{ fontSize: '28px' }}>{data.emoji}</span>
                 <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#2C3E50', margin: '0' }}>
-                  {industry.name}
+                  {data.name}
                 </h2>
               </div>
 
-              {industry.case_studies.map((study, idx) => (
+              {data.caseStudies.map((study, idx) => (
                 <div key={idx} style={{ marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#2C3E50', margin: '0 0 12px 0' }}>
-                    {study.name} {study.location && `· ${study.location}`}
+                  <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#2C3E50', margin: '0 0 8px 0' }}>
+                    {study.name}, {study.location}
                   </h3>
-
+                  
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '12px' }}>
                     <div style={{
                       background: '#F5F5F5',
@@ -1105,7 +584,7 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
                       borderRadius: '6px',
                       fontSize: '13px'
                     }}>
-                      <div style={{ color: '#888888', marginBottom: '8px', fontWeight: '600', fontSize: '12px' }}>BEFORE</div>
+                      <div style={{ color: '#888888', marginBottom: '6px', fontWeight: '600' }}>BEFORE</div>
                       <div style={{ color: '#2C3E50' }}>{study.before}</div>
                     </div>
                     <div style={{
@@ -1114,43 +593,24 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
                       borderRadius: '6px',
                       fontSize: '13px'
                     }}>
-                      <div style={{ color: '#0F6E56', marginBottom: '8px', fontWeight: '600', fontSize: '12px' }}>AFTER</div>
+                      <div style={{ color: '#0F6E56', marginBottom: '6px', fontWeight: '600' }}>AFTER</div>
                       <div style={{ color: '#2C3E50' }}>{study.after}</div>
                     </div>
                   </div>
 
                   <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px 0',
-                    borderTop: '1px solid #E0E0E0',
-                    marginTop: '12px'
+                    fontSize: '12px',
+                    color: '#D97634',
+                    fontWeight: '600'
                   }}>
-                    <div>
-                      <div style={{ fontSize: '11px', color: '#888888' }}>Metric</div>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#0F6E56' }}>{study.metric}</div>
-                    </div>
-                    <p style={{ fontSize: '13px', color: '#555555', margin: '0', fontStyle: 'italic', maxWidth: '50%' }}>
-                      "{study.testimonial}"
-                    </p>
+                    ROI Timeline: {data.roiTimeline} • Time Saved: {data.timeSaved}
                   </div>
                 </div>
               ))}
-
-              <div style={{
-                background: '#F9F0E8',
-                padding: '16px',
-                borderRadius: '6px',
-                marginTop: '20px',
-                fontSize: '13px',
-                color: '#D97634'
-              }}>
-                <strong>Timeline: {industry.roiTimeline}</strong> · <strong>Time Saved: {industry.timeSaved}</strong>
-              </div>
             </div>
           ))}
 
+          {/* CTA */}
           <div style={{
             background: '#2C3E50',
             color: '#F7F6F3',
@@ -1185,19 +645,9 @@ ${userProfile.industry ? JSON.stringify(INDUSTRIES[userProfile.industry]) : 'Not
         </div>
       </div>
     );
-  };
+  }
 
-  // =========================================================================
-  // MAIN RENDER - ROUTER
-  // =========================================================================
-
-  return (
-    <div style={{ fontFamily: 'IBM Plex Sans, sans-serif' }}>
-      {currentView === 'landing' && renderLanding()}
-      {currentView === 'discover' && renderDiscovery()}
-      {currentView === 'case-studies' && renderCaseStudies()}
-    </div>
-  );
+  return null;
 };
 
-export default StridePlatform;
+export default STRIDEPlatform;
