@@ -1,3 +1,35 @@
-git add .
-git commit -m "Prepare for Firebase Hosting"
-git push origin main
+{
+  "name": "stride-frontend",
+  "version": "1.0.0",
+  "description": "STRIDE Service Business Platform",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "browsers": [
+      "last 4 versions",
+      "Firefox ESR",
+      "> 1%",
+      "ie >= 11"
+    ]
+  }
+}
